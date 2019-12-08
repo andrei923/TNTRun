@@ -1,0 +1,604 @@
+options:
+
+	#MESSAGES
+	prefix: &6TNT Run &8» &7
+	version: v.0.0.1
+	
+	#%size of {tntRun::arena::%{_arena}%::cache::running-ninjas::*}% = current players, %{tntRun::arena::%{_arena}%::max}% = max arena players.
+	join: &a%{_p}'s display name% &ehas joined to the game &e(&b%size of {tntRun::arena::%{_arena}%::cache::running-ninjas::*}%&e/&b%{tntRun::arena::%{_arena}%::max}%&e).
+	leave: &7%{_p}'s display name% &ehas left the game.
+	starting: &eStarting in &6%{tntRun::arena::%{_arena}%::cache::seconds}% &e%{_time}%
+	in-game: &cYou are in game.
+	not-in-game: &cYou are not in game.
+	death: &c✘ &7%{_p}'s display name% &eeliminated!
+	game-full: &7This arena is full.
+	game-running: &7This game already started.
+	not-exist: &7This arena not exists.
+	summary: "&a︼︼︼︼︼︼︼︼︼︼︼︼︼︼︼︼︼︼︼︼︼︼︼︼︼", "", "&e✦ &6TNTRun &e✦", "", "&a1st &ePlace &8➭ &7%{_place.1}%", "&b2nd &ePlace &8➭ &7%{_place.2}%", "&c3rd &ePlace &8➭ &7%{_place.3}%", "" and "&a︻︻︻︻︻︻︻︻︻︻︻︻︻︻︻︻︻︻︻︻︻︻︻︻︻"
+	second: second
+	seconds: seconds
+
+	#SCOREBOARD
+	website: &b㋡ &e&nMC.SERVER.NET&r &b㋡
+	
+	#SETTINGS
+	chat-format: &7%player's display name% &8&l» &7%message%
+	lobby-time: 30
+	action-bar: &aRun away!
+	
+	leave-slot: 8
+	leave-item: magma cream
+	leave-name: &cLeave the game.
+
+	teleporter-slot: 0
+	teleporter-item: compass
+	teleporter-name: &aPlayer Teleporter
+
+	#MENUS
+	arena-list: &8&l» &e&nTNT Run - Arenas
+	player-teleporter: &8&l» &7Player Teleporter
+
+	#TITLES
+	death-title: &c
+	death-subtitle: &7&nYou are eliminated!
+
+	game-starting-title: &eGame Starts in &a%{tntRun::arena::%{_arena}%::cache::seconds}%
+	game-starting-subtitle: &e%{_time}%
+
+	#SIGN
+
+	line-1: &8» &7Arena: &b%{_arena}% &8«
+	line-2: &8» &a%{tntRun::arena::%{_arena}%::cache::status}% &8«
+	line-3: &8» &7Playing &3%size of {tntRun::arena::%{_arena}%::cache::running-ninjas::*}%&7/&3%{tntRun::arena::%{_arena}%::max}% &8«
+	line-4:	&e	 
+
+
+
+#
+#CODE
+#
+import:			
+	org.bukkit.Bukkit
+	org.bukkit.Material	
+	org.bukkit.Location	
+	org.bukkit.material.MaterialData	
+	fr.mrmicky.fastparticle.FastParticle
+	fr.mrmicky.fastparticle.ParticleType	
+
+local effect [leaf] send title %string% with subtitle %string% to %players% with %number% fadein and %number% fadeout for %number%:		
+	trigger:
+		loop exprs-3:
+			{tntRun::cache::TitleManager}.sendTitle(loop-value-1, expr-1, expr-4, expr-5 and expr-6)
+			{tntRun::cache::TitleManager}.sendSubtitle(loop-value-1 and expr-2)
+
+local effect [leaf] send action[ ]bar %string% to %players%:		
+	trigger:
+		loop exprs-2:
+			{tntRun::cache::TitleManager}.sendActionbar(loop-value-1 and expr-1)
+			
+local effect create scoreboard for %player%:	
+	trigger:
+		if {tntRun::cache::TitleManager}.hasScoreboard(expr-1) is true:
+			{tntRun::cache::TitleManager}.removeScoreboard(expr-1)
+		{tntRun::cache::TitleManager}.giveScoreboard(expr-1)
+
+local effect delete scoreboard of %player%:	
+	trigger:
+		{tntRun::cache::TitleManager}.removeScoreboard(expr-1)	
+
+local effect set scoreboard title of %player% to %string%:	
+	trigger:
+		{tntRun::cache::TitleManager}.setScoreboardTitle(expr-1 and expr-2)
+
+local effect set scoreboard line %number% of %player% to %string%:	
+	trigger:
+		{tntRun::cache::TitleManager}.setScoreboardValue(expr-2, expr-1 and expr-3)
+
+
+command tntrun [<text = help>] [<text>] [<text>]:
+	aliases: tnt
+	executable by: players
+	trigger:
+		if arg-1 is "help" or "join" or "list" or "leave" or "autojoin" or "stats":
+			if player have permission "tnt.player":
+				if arg 1 is "help":
+					send "&7&l------------&8[ &6&lTNT Run &8]&7&l------------"
+					send "&7/TnTRun list"
+					send "&7/TnTRun join &8(&7arena_name&8)"
+					send "&7/TnTRun autojoin"
+					send "&7/TnTRun leave"
+					if player have permission "tnt.admin":
+						send "&7/TnTRun Start"				
+						send "&7/TnTRun ResetStats &8(&7player_name&8)"				
+						send "&7/TnTRun SetLobby"
+						send "&7/TnTRun CreateArena &8(&7arena_name&8)"			
+						send "&7/TnTRun SetArenaLobby &8(&7arena_name&8)"	
+						send "&7/TnTRun SetMin &8(&7arena_name&8) &8(&7number&8)"	
+						send "&7/TnTRun SetMax &8(&7arena_name&8) &8(&7number&8)"		
+						send "&7/TnTRun SetLoseLevel &8(&7arena_name&8)"								
+						send "&7/TnTRun SetMapName &8(&7arena_name&8) &8(&7name&8)"						
+						send "&7/TnTRun SaveArena &8(&7arena_name&8)"							
+						send "&7/TnTRun DeleteArena &8(&7arena_name&8)"					
+						send "&7&l----------------------------------------"
+					else:
+						send "&7&l----------------------------------------"
+				if arg 1 is "join":		
+					tnt_join(player, arg-2)
+				if arg 1 is "list":		
+					if {tntRun::player::%player%::state} is not set:	
+						open chest inventory with 6 rows named "{@arena-list}" to player	
+						wait a tick
+						set {_slot} to 10							
+						loop {tntRun::arenas::*}:
+							set {_item} to green clay named "&8» &7Arena: &e%loop-value%"
+							set line 1 of {_item}'s lore to "&8▪ &7Map: &e%{tntRun::arena::%loop-value%::map}%"	
+							set line 2 of {_item}'s lore to "&8▪ &7Status: &e%{tntRun::arena::%loop-value%::cache::status}%"								
+							set line 3 of {_item}'s lore to "&8▪ &7Playing: &e%size of {tntRun::arena::%loop-value%::cache::cache::running-ninjas::*}%"	
+							make a gui slot {_slot} of player with {_item} to run function tnt_join(player, loop-value-1)
+							add 1 to {_slot}
+							if {_slot} is 17 or 26 or 35:
+								add 2 to {_slot}
+						while name of player's current inventory is "{@arena-list}":
+							loop  0, 1, 2, 3, 4 ,5, 6, 7, 8, 17, 26, 35, 44, 43, 42, 41, 40, 39, 38, 37, 36, 27, 18 and 9:
+								make a gui slot loop-value-1 of player with black glass named "&7Hi, &e&n%player's display name%&r &7OwO" to do nothing
+								wait a tick				
+								make a gui slot loop-value-1 of player with air to do nothing														
+				if arg 1 is "leave":	
+					tnt_leave(player)
+				if arg 1 is "autojoin":		
+					if {tntRun::player::%player%::state} is not set:
+						loop {tntRun::arenas::*}:
+							if {tntRun::arena::%loop-value%::cache::status} is "WAITING" or "STARTING":
+								tnt_join(player, loop-value)
+								stop
+				if arg-1 is "stats":
+					send "&e&l✦&7&l&m--------------------------------------&e&l✦"
+					send ""
+					send "&8&l»          &6&lTNT Run Stats        &8&l«"		
+					send ""	
+					loop "Wins", "Loses", "PlayedGames" and "BrokenBlocks": 			
+						send "&6» &7%loop-value-1% &c%{tntRun::stats::%loop-value-1%::%uuid of player%}%"				
+					send ""
+					send "&e&l✦&7&l&m--------------------------------------&e&l✦"			
+		if arg 1 is "setlobby" or "resetstats" or "start" or "reload" or "savearena" or "createarena" or "deletearena" or "SetArenaLobby" or "SetMax" or "SetMin" or "SetMapName" or "SetLoseLevel":		
+			if player has permission "tnt.admin":	
+				if arg 1 is "setlobby":	
+					set {tntRun::lobby} to location of player
+					send "{@prefix}&aLobby set."										
+				if arg 1 is "resetstats":			
+					set {_p} to arg-2 parsed as player
+					tnt_stats("reset", {_p})
+					send "{@prefix}&cReseted Stats for &a%{_p}%"						
+				if arg 1 is "start":
+					size of {tntRun::arena::%{tntRun::player::%player%::arena}%::cache::running-ninjas::*} > 1
+					tnt_start({tntRun::player::%player%::arena})
+				if arg 1 is "reload":		
+					broadcast "{@prefix}&aReloading..."
+					make console execute command "sk reload %script%"			
+				if arg 1 is "savearena" or "createarena" or "deletearena" or "SetArenaLobby" or "SetMax" or "SetMin" or "SetMapName" or "SetLoseLevel":
+					if arg 1 is "createarena":			
+						if {tntRun::arena::%arg-2%::state} is not set:
+							set {tntRun::arena::%arg-2%::state} to "setup"
+							send "{@prefix}&aArena &c%arg-2% &ahas been created!"
+						else:
+							send "{@prefix}&aThis arena already exists!"			
+					if arg 1 is "SetArenaLobby":
+						set {tntRun::arena::%arg-2%::lobby} to location of player
+						send "{@prefix}&aLobby for Arena &3%arg-2% &ahas been set!"
+					if arg 1 is "SetMax":
+						set {tntRun::arena::%arg-2%::max} to arg-3 parsed as number
+						send "{@prefix}&aMaximum players for Arena &3%arg-2% &ahas been set!"	
+					if arg 1 is "SetMapName":
+						set {tntRun::arena::%arg-2%::map} to arg-3
+						send "{@prefix}&aMap Name for Arena &3%arg-2% &ahas been set!"								
+					if arg 1 is "SetMin":
+						set {tntRun::arena::%arg-2%::min} to arg-3 parsed as number
+						send "{@prefix}&aMinimum players for Arena &3%arg-2% &ahas been set!"	
+					if arg 1 is "SetLoseLevel":
+						set {tntRun::arena::%arg-2%::LoseLevel} to y-coords of player
+						send "{@prefix}&aLose level for Arena &3%arg-2% &ahas been set!"
+					if arg 1 is "deletearena":		
+						if {tntRun::arena::%arg-2%::state} is set:
+							tnt_resetarena(arg-2)
+							delete {tntRun::arena::%arg-2%::*}
+							remove arg-2 from {tntRun::arenas::*}
+							send "{@prefix}&aArena &c%arg-2% &ahas been deleted."
+						else:
+							send "{@prefix}&aThis arena not exists"
+					if arg 1 is "savearena":		
+						if {tntRun::arena::%arg-2%::state} is set:
+							if {tntRun::arena::%arg-2%::lobby} is set:						
+								if {tntRun::arena::%arg-2%::max} is set:	
+									if {tntRun::arena::%arg-2%::min} is set:	
+										if {tntRun::arena::%arg-2%::map} is set:	
+											if {tntRun::arena::%arg-2%::LoseLevel} is set:
+												set {tntRun::arena::%arg-2%::state} to "ready"
+												add arg-2 to {tntRun::arenas::*}
+												send "{@prefix}&aArena &c%arg-2% &ahas been saved."
+												tnt_resetarena(arg-2)
+											else:
+												send "{@prefix}&aLose level is not set!"													
+										else:
+											send "{@prefix}&aMap name is not set!"											
+									else:
+										send "{@prefix}&aMinimum players is not set!"											
+								else:
+									send "{@prefix}&aMaximum players is not set!"																																																		
+							else:
+								send "{@prefix}&aLobby is not set!"
+					if arg 1 is "deletearena":		
+						if {tntRun::arena::%arg-2%::state} is set:
+							tnt_resetarena(arg-2)
+							delete {tntRun::arena::%arg-2%::*}
+							remove arg-2 from {tntRun::arenas::*}
+							send "{@prefix}&aArena &c%arg-2% &ahas been deleted."				
+
+on chat:
+	if {tntRun::player::%player%::state} is set:
+		cancel event		
+		send "{@chat-format}" to {tntRun::arena::%{tntRun::player::%player%::arena}%::cache::running-ninjas::*} and {tntRun::arena::%{tntRun::player::%player%::arena}%::cache::bad-ninjas::*}
+
+on drop:
+	if {tntRun::player::%player%::state} is set:
+		cancel event
+					
+on hunger bar change:	
+	if {tntRun::player::%player%::state} is set:
+		set player's hunger to 20
+		
+on damage of player:
+	if {tntRun::player::%victim%::state} is set:
+		cancel event
+		if {tntRun::arena::%{tntRun::player::%victim%::arena}%::cache::status} is "STARTING" or "WAITING":
+			damage cause is void
+			teleport victim to {tntRun::arena::%{tntRun::player::%victim%::arena}%::lobby}
+		if {tntRun::arena::%{tntRun::player::%victim%::arena}%::cache::status} is set:
+			if damage cause is fall:
+				set {_w} to world of victim
+				FastParticle.spawnParticle({_w}, ParticleType.EXPLOSION_LARGE, location of victim and 1)	
+		
+function tnt_set_place(arena: text, p: player):
+	size of {tntRun::arena::%{_arena}%::cache::running-ninjas::*} = 4 or 3 or 2 or 1
+	set {_size} to size of {tntRun::arena::%{_arena}%::cache::running-ninjas::*} 
+	set {tntRun::arena::%{_arena}%::cache::summary::%{_size}%} to {_p}
+
+function tnt_check_win(arena: text):
+	size of {tntRun::arena::%{_arena}%::cache::running-ninjas::*} is 1
+	tnt_set_arena_status({_arena}, "RESTARTING")
+	loop 1, 2 and 3:
+		if {tntRun::arena::%{_arena}%::cache::summary::%loop-value-1%} is set:	
+			set {_place.%loop-value%} to "%{tntRun::arena::%{_arena}%::cache::summary::%loop-value-1%}%"
+		else:	
+			set {_place.%loop-value%} to "&7Loading..."	
+	loop {tntRun::arena::%{_arena}%::cache::running-ninjas::*}:
+		set {_p} to loop-value-1	
+		set {_place.1} to "%{_p}%"				
+	send message centered {@summary} to {tntRun::arena::%{_arena}%::cache::running-ninjas::*} and {tntRun::arena::%{_arena}%::cache::bad-ninjas::*}				
+	set {_uuid} to uuid of {_p}
+	add 1 to {tntRun::stats::Wins::%{_uuid}%}
+	loop 10 times:
+		launch "BALL" firework at location of {_p} timed 1 coloured "RED" and "BLUE" AND "YELLOW" AND "GREEN"
+		wait a second	
+	tnt_resetarena({_arena})	
+						
+			
+on load:
+	delete {tntRun::player::*}
+	send "&7&l--------------------------------------------" to console
+	send " " to console
+	send "{@prefix}&aLoading &e{@version}&a..." to console
+	broadcast "{@prefix}&aPlugin loaded!"
+	send " " to console
+	send "&7&l--------------------------------------------" to console
+	loop {tntRun::arenas::*}:
+		delete {tntRun::arena::%loop-value-1%::cache::running-ninjas::*} and {tntRun::arena::%loop-value-1%::cache::bad-ninjas::*}
+		tnt_resetarena(loop-value)
+	set {tntRun::cache::TitleManager} to Bukkit.getServer().getPluginManager().getPlugin("TitleManager")	
+			
+
+on unload:
+	send "&7&l--------------------------------------------" to console
+	send " " to console
+	send "{@prefix}&aDisabling &e{@version}&a..." to console
+	send "{@prefix}&e{@version} &adisabled!" to console
+	send " " to console
+	send "&7&l--------------------------------------------" to console
+
+function tnt_stats(do: text, p: player):
+	set {_uuid} to uuid of {_p}
+	{_do} is "check":
+		loop "Wins", "Loses", "PlayedGames" and "BrokenBlocks":
+			{tntRun::stats::%loop-value%::%{_uuid}%} is not set
+			set {tntRun::stats::%loop-value%::%{_uuid}%} to 0
+	{_do} is "reset":
+		loop "Wins", "Loses", "PlayedGames" and "BrokenBlocks":
+			set {tntRun::stats::%loop-value%::%{_uuid}%} to 0	
+	
+function tnt_leave(p: player):
+	if {tntRun::player::%{_p}%::state} is set:
+		set {_arena} to {tntRun::player::%{_p}%::arena}
+		if {tntRun::player::%{_p}%::state} is "IN-GAME":
+			tnt_set_place({_arena}, {_p})
+			remove {_p} from {tntRun::arena::%{_arena}%::cache::running-ninjas::*}
+			send "{@prefix}{@leave}" to {tntRun::arena::%{_arena}%::cache::running-ninjas::*}
+			if {tntRun::arena::%{_arena}%::cache::status} is "IN-GAME":	
+				tnt_check_win({_arena})	
+		if {tntRun::player::%{_p}%::state} is "IN-GAME-SPEC":
+			remove {_p} from {tntRun::arena::%{_arena}%::cache::bad-ninjas::*}
+		tnt_clear_player({_p})
+		delete scoreboard of {_p}
+		tnt_update_sign({_arena})
+		loop "arena" and "state":
+			delete {tntRun::player::%{_p}%::%loop-value%}				
+		teleport {_p} to {tntRun::lobby}
+	else:
+		send "{@prefix}{@not-in-game}" to {_p}
+		
+function tnt_join(p: player, arena: text):	
+	if {tntRun::player::%{_p}%::state} is not set:
+		if {tntRun::arena::%{_arena}%::state} is "ready":
+			if {tntRun::arena::%{_arena}%::cache::status} is "WAITING" or "STARTING":
+				if size of {tntRun::arena::%{_arena}%::cache::running-ninjas::*} < {tntRun::arena::%{_arena}%::max}:
+					tnt_clear_player({_p})
+					set {tntRun::player::%{_p}%::state} to "IN-GAME"
+					set {tntRun::player::%{_p}%::arena} to {_arena}
+					set slot {@leave-slot} of {_p} to {@leave-item} named "{@leave-name}"
+					add {_p} to {tntRun::arena::%{_arena}%::cache::running-ninjas::*}	
+					teleport {_p} to {tntRun::arena::%{_arena}%::lobby}
+					tnt_createBoard({_p}, "TNT-WAITING", 10)					
+					tnt_update_sign({_arena})	
+					if size of {tntRun::arena::%{_arena}%::cache::running-ninjas::*} = 2:
+						tnt_start_countdown({_arena})											
+					send "{@prefix}{@join}" to {tntRun::arena::%{_arena}%::cache::running-ninjas::*}
+				else:
+					tnt_setspec({_p}, false)
+					add {_p} to {tntRun::arena::%{_arena}%::cache::bad-ninjas::*}
+					teleport {_p} to a random element out of {tntRun::arena::%{_arena}%::cache::bad-ninjas::*}
+					send "{@prefix}{@game-full}" to {_p}
+			else:
+				send "{@prefix}{@game-running}" to {_p}
+		else:
+			send "{@prefix}{@not-exist}" to {_p}
+	else:
+		send "{@prefix}{@in-game}" to {_p}
+					
+on join:
+	tnt_stats("check", player)
+		
+on right click:
+	if {tntRun::player::%player%::state} is set:
+		name of event-item is "{@leave-name}" or "{@teleporter-name}":
+			cancel event
+		name of event-item is "{@leave-name}":	
+			tnt_leave(player)
+		name of event-item is "{@teleporter-name}":
+			open chest inventory with 6 rows named "{@player-teleporter}" to player	
+			wait a tick
+			set {_slot} to 0
+			loop {tntRun::arena::%{tntRun::player::%player%::arena}%::cache::running-ninjas::*}:
+				set {_target} to loop-value-1
+				make a gui slot {_slot}-1 of player with skull of loop-value named "&e%loop-value%" to run:
+					teleport player to {_target}
+				add 1 to {_slot}			
+		
+on quit:
+	tnt_leave(player)
+
+on break:
+	if {tntRun::player::%player%::state} is set:
+		cancel event
+	
+on place:
+	if {tntRun::player::%player%::state} is set:
+		cancel event
+		
+on inventory click:	
+	if {tntRun::player::%player%::state} is set:
+		cancel event
+		
+function tnt_setspec(p: player, title: boolean):
+	tnt_clear_player({_p})	
+	set {tntRun::player::%{_p}%::state} to "IN-GAME-SPEC"
+	set {_arena} to {tntRun::player::%{_p}%::arena}		
+	remove {_p} from {tntRun::arena::%{_arena}%::cache::running-ninjas::*}
+	add {_p} to {tntRun::arena::%{_arena}%::cache::bad-ninjas::*}
+	set {_p}'s gamemode to adventure
+	set {_p}'s flight mode to true	
+	apply potion of invisibility without any particles to {_p} for 7 days
+	set slot {@teleporter-slot} of {_p} to {@teleporter-item} named "{@teleporter-name}"
+	set slot {@leave-slot} of {_p} to {@leave-item} named "{@leave-name}"
+	if {_title} is true:
+		send title "{@death-title}" with subtitle "{@death-subtitle}" to {_p} with 10 fadein and 10 fadeout for 40
+		send "{@prefix}{@death}" to {tntRun::arena::%{_arena}%::cache::running-ninjas::*} and {tntRun::arena::%{_arena}%::cache::bad-ninjas::*}
+	teleport {_p} to a random element out of {tntRun::arena::%{_arena}%::cache::running-ninjas::*}
+	tnt_check_win({_arena})
+				
+function tnt_spawn_block_Particle(loc: location):
+	set {_w} to world of {_loc}
+	set {_b} to block at {_loc}
+	set {_particle} to "%raw name of {_b}%"
+	replace all "minecraft:" with "" in {_particle}
+	set {_particle} to {_particle} in upper case
+	set {_material} to new MaterialData(Material.."%{_particle}%")
+	FastParticle.spawnParticle({_w}, ParticleType.BLOCK_CRACK, {_loc}, 5 and {_material})	
+
+function tnt_somedelay(loc: location, arena: text):
+	wait 3 ticks	
+	set {_location} to tnt_getPlayerStandOnBlockLocation({_loc})
+	block at {_location} != air:
+		set {tntRun::arena::%{_arena}%::BROKEN-BLOCKS::%{_location}%} to {_location}
+		set {tntRun::arena::%{_arena}%::BROKEN-BLOCKS-TYPE::%{_location}%} to type of block at {_location}
+		tnt_spawn_block_Particle({_location})
+		set block at {_location} to air
+
+function tnt_getPlayerStandOnBlockLocation(loc: location) :: location:
+	set {_b11} to {_loc}.clone().add(0.3,0 and -0.3)
+	if ({_b11}.getBlock().getType() != Material.AIR):
+		return {_b11}
+	set {_b12} to {_loc}.clone().add(-0.3,0 and -0.3)
+	if ({_b12}.getBlock().getType() != Material.AIR):
+		return {_b12}
+	set {_b21} to {_loc}.clone().add(0.3,0 and 0.3)
+	if ({_b21}.getBlock().getType() != Material.AIR):
+		return {_b21}
+	set {_b22} to {_loc}.clone().add(-0.3,0 and +0.3)
+	if ({_b22}.getBlock().getType() != Material.AIR):
+		return {_b22}
+	return {_loc}
+
+function tnt_start_check(p: player):
+	set {_w} to world of {_p}
+	while {tntRun::player::%{_p}%::state} is "IN-GAME":
+		FastParticle.spawnParticle({_w}, ParticleType.VILLAGER_HAPPY, location of {_p} and 5)
+		if {tntRun::arena::%{tntRun::player::%{_p}%::arena}%::cache::status} is "IN-GAME":	
+			if y-coords of {_p} < {tntRun::arena::%{tntRun::player::%{_p}%::arena}%::LoseLevel}:
+				tnt_set_place({tntRun::player::%{_p}%::arena}, {_p})	
+				tnt_setspec({_p}, true)
+				stop
+		else:
+			stop
+		wait a tick
+
+function tnt_start_breaking(p: player):
+	set {_uuid} to uuid of {_p}
+	set {_arena} to {tntRun::player::%{_p}%::arena}
+	while {tntRun::player::%{_p}%::state} is "IN-GAME":
+		if {tntRun::arena::%{tntRun::player::%{_p}%::arena}%::cache::status} is "IN-GAME":
+			if {_p} is on ground:
+				set {_loc} to location of {_p}
+			wait 2 ticks
+			loop 2 times:		
+				{_loc} is set
+				set {_location} to {_loc}
+				remove loop-number from y-coords of {_location}
+				tnt_somedelay({_location}, {_arena})
+				add 1 to {tntRun::arena::%{_arena}%::cache::BlocksDestroyed::%{_p}%}
+				add 1 to {tntRun::stats::BrokenBlocks::%{_uuid}%}	
+		else:
+			stop
+	
+function tnt_start(arena: text):
+	set {tntRun::arena::%{_arena}%::cache::status} to "IN-GAME"	
+	loop {tntRun::arena::%{_arena}%::cache::running-ninjas::*}:	
+		tnt_clear_player(loop-value)
+		set {tntRun::arena::%{_arena}%::cache::BlocksDestroyed::%loop-value%} to 0
+		tnt_createBoard(loop-value, "TNT-GAME", 11)
+		add 1 to {tntRun::stats::PlayedGames::%uuid of loop-value%}
+		apply potion of speed 1 without any particles to loop-value for 7 days
+		tnt_start_breaking(loop-value)	
+		tnt_start_check(loop-value)	
+
+function tnt_update_sign(arena: text):
+	set line 1 of block at {tntRun::arena::%{_arena}%::sign} to "{@line-1}"
+	set line 2 of block at {tntRun::arena::%{_arena}%::sign} to "{@line-2}"
+	set line 3 of block at {tntRun::arena::%{_arena}%::sign} to "{@line-3}"
+	set line 4 of block at {tntRun::arena::%{_arena}%::sign} to "{@line-4}"	
+
+function tnt_set_arena_status(arena: text, status: text):	
+	set {tntRun::arena::%{_arena}%::cache::status} to {_status}
+	tnt_update_sign({_arena})
+
+function tnt_start_countdown(arena: text):
+	set {tntRun::arena::%{_arena}%::cache::status} to "STARTING"
+	loop {tntRun::arena::%{_arena}%::cache::seconds} times:
+		if {tntRun::arena::%{_arena}%::cache::status} is "STARTING" or "WAITING":
+			size of {tntRun::arena::%{_arena}%::cache::running-ninjas::*} >= {tntRun::arena::%{_arena}%::min}:
+				remove 1 from {tntRun::arena::%{_arena}%::cache::seconds}	
+				if {tntRun::arena::%{_arena}%::cache::seconds} = 1 or 2 or 3 or 4 or 5 or 10:
+					{tntRun::arena::%{_arena}%::cache::seconds} > 1:
+						set {_time} to "{@seconds}"
+					else:
+						set {_time} to "{@second}"
+					send "{@prefix}{@starting}" to {tntRun::arena::%{_arena}%::cache::running-ninjas::*}	
+					send title "{@game-starting-title}" with subtitle "{@game-starting-subtitle}" to {tntRun::arena::%{_arena}%::cache::running-ninjas::*} with 1 fadein and 1 fadeout for 20
+				if {tntRun::arena::%{_arena}%::cache::seconds} = 1:
+					size of {tntRun::arena::%{_arena}%::cache::running-ninjas::*} >= {tntRun::arena::%{_arena}%::min}:
+						tnt_start({_arena})
+			else:
+				tnt_set_arena_status({_arena}, "WAITING")
+				set {tntRun::arena::%{_arena}%::cache::seconds} to {@lobby-time}
+				stop
+		wait a second
+
+on sign change:
+	line 1 is "[TNT]" or "[TNTRUN]" or "[TNT-RUN]"
+	line 2 is "join"
+	player have permission "tnt.admin"
+	if {tntRun::arena::%line 3%::state} is set:
+		set {tntRun::arena::%line 3%::sign} to location of event-block
+		tnt_update_sign(line 3)
+	else:
+		send "{@prefix}{@not-exist}"	
+
+on right click on sign:
+	loop {tntRun::arenas::*}:
+		if {tntRun::arena::%loop-value-1%::sign} is location of event-block:	
+			tnt_join(player, loop-value-1)	
+
+function tnt_clear_player(p: player):						
+	heal {_p}
+	extinguish {_p}
+	set {_p}'s food to 20	
+	clear {_p}'s level
+	clear {_p}'s inventory
+	set {_p}'s gamemode to survival
+	set {_p}'s flight mode to false		
+	loop ...{_p}.getActivePotionEffects():
+		{_p}.removePotionEffect(loop-value.getType())	
+	set velocity of {_p} to new vector 0, 0, 0		
+	
+function tnt_setSlot(p: player, slot: integer, t: text):
+	add "&a", "&b", "&c", "&d", "&e", "&1", "&2", "&3", "&4", "&5", "&6", "&7", "&8", "&9" and "&f" to {_d::*}
+	if {_slot} is between 1 and 15: 
+		set scoreboard line {_slot} of {_p} to "%{_d::%{_slot}%}%%{_t}%"
+
+function tnt_createBoard(p: player, t: text, size: integer = 15):
+	create scoreboard for {_p}
+	set scoreboard title of {_p} to "&e✦ &eTNTRun &e✦"
+	if {_t} is "TNT-GAME":
+		while {tntRun::arena::%{tntRun::player::%{_p}%::arena}%::cache::status} is "IN-GAME":
+			send action bar "{@action-bar}" to {_p}
+			tnt_setSlot({_p}, 1, "&7%now%")		
+			tnt_setSlot({_p}, 2, "")	
+			tnt_setSlot({_p}, 3, "&8➭ &fMap &e✈ &a%{tntRun::arena::%{tntRun::player::%{_p}%::arena}%::map}%")	
+			tnt_setSlot({_p}, 4, "")							
+			tnt_setSlot({_p}, 5, "&8➭ &fBlocks Destroyed &b❒ &a%{tntRun::arena::%{tntRun::player::%{_p}%::arena}%::cache::BlocksDestroyed::%{_p}%}%")					
+			tnt_setSlot({_p}, 6, "")		
+			tnt_setSlot({_p}, 7, "&8➭ &fAlive &c❤ &a%size of {tntRun::arena::%{tntRun::player::%{_p}%::arena}%::cache::running-ninjas::*}% &aPlayers")					
+			tnt_setSlot({_p}, 8, "")		
+			tnt_setSlot({_p}, 9, "&8➭ &fSpectating &8✘ &a%size of {tntRun::arena::%{tntRun::player::%{_p}%::arena}%::cache::bad-ninjas::*}% &aPlayers")	
+			tnt_setSlot({_p}, 10, "")														
+			tnt_setSlot({_p}, 11, "{@website}")							
+			wait a second
+	if {_t} is "TNT-WAITING":
+		while {tntRun::arena::%{tntRun::player::%{_p}%::arena}%::cache::status} is "WAITING" or "STARTING":	
+			tnt_setSlot({_p}, 1, "&7%now%")
+			tnt_setSlot({_p}, 2, "")		
+			tnt_setSlot({_p}, 3, "&8➭ &fMap: &a%{tntRun::arena::%{tntRun::player::%{_p}%::arena}%::map}%")		
+			tnt_setSlot({_p}, 4, "&8➭ &fPlayers: &a%size of {tntRun::arena::%{tntRun::player::%{_p}%::arena}%::cache::running-ninjas::*}%/%{tntRun::arena::%{tntRun::player::%{_p}%::arena}%::max}%")	
+			tnt_setSlot({_p}, 5, "")				
+			tnt_setSlot({_p}, 6, "&8➭ &fStarting in: &a%{tntRun::arena::%{tntRun::player::%{_p}%::arena}%::cache::seconds}%s")				
+			tnt_setSlot({_p}, 7, "")						
+			tnt_setSlot({_p}, 8, "&8➭ &fArena: &a%{tntRun::player::%{_p}%::arena}%")					
+			tnt_setSlot({_p}, 9, "")	
+			tnt_setSlot({_p}, 10, "{@website}")						
+			wait a second		
+
+function tnt_resetarena(arena: text):
+	loop {tntRun::arena::%{_arena}%::cache::running-ninjas::*} and {tntRun::arena::%{_arena}%::cache::bad-ninjas::*}:
+		loop "arena" and "state":
+			delete {tntRun::player::%loop-value-1%::%loop-value-2%}	
+		tnt_clear_player(loop-value-1)
+		teleport loop-value-1 to {tntRun::lobby}
+		delete scoreboard of loop-value-1
+	loop {tntRun::arena::%{_arena}%::BROKEN-BLOCKS::*}:
+		set block at location of {tntRun::arena::%{_arena}%::BROKEN-BLOCKS::%loop-index%} to {tntRun::arena::%{_arena}%::BROKEN-BLOCKS-TYPE::%loop-index%}
+		wait a tick	
+	delete {tntRun::arena::%{_arena}%::cache::*}
+	delete {tntRun::arena::%{_arena}%::BROKEN-BLOCKS::*}			
+	delete {tntRun::arena::%{_arena}%::BROKEN-BLOCKS-TYPE::*}		
+	set {tntRun::arena::%{_arena}%::cache::seconds} to {@lobby-time}
+	tnt_set_arena_status({_arena}, "WAITING")
+	tnt_update_sign({_arena})
+							
+				
