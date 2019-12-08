@@ -454,6 +454,8 @@ function tnt_start_check(p: player):
 			if y-coords of {_p} < {tntRun::arena::%{tntRun::player::%{_p}%::arena}%::LoseLevel}:
 				tnt_set_place({tntRun::player::%{_p}%::arena}, {_p})	
 				tnt_setspec({_p}, true)
+				set {_uuid} to uuid of {_p}
+				add 1 to {tntRun::stats::Loses::%{_uuid}%}
 				stop
 		else:
 			stop
