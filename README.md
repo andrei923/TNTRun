@@ -1,6 +1,6 @@
-# ✦ A TNTRun Minigame made using Skript for Minecraft:
+# ➭ A TNTRun Minigame made using Skript for Minecraft:
 
-# ✦ Dependencies:
+# ➭ Dependencies:
 > ▪ Skript ➥ https://github.com/SkriptLang/Skript/releases
 
 > ▪ Skript for 1.8.8 https://github.com/SkriptLang/Skript/releases/tag/dev36
