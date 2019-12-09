@@ -94,20 +94,27 @@ local effect set scoreboard line %number% of %player% to %string%:
 	trigger:
 		{tntRun::cache::TitleManager}.setScoreboardValue(expr-2, expr-1 and expr-3)
 
+local effect [leaf] hide %player% [(from|for) %player%]:
+	trigger:
+		expr-1.hidePlayer(expr-2)
+
+local effect [leaf] reveal %player% [(to|for|from) %player%]:
+	trigger:
+		expr-1.showPlayer(expr-2)	
 
 command tntrun [<text = help>] [<text>] [<text>]:
 	aliases: tnt
 	executable by: players
 	trigger:
 		if arg-1 is "help" or "join" or "list" or "leave" or "autojoin" or "stats":
-			if player have permission "tnt.player":
+			if player have permission "tntrun.player":
 				if arg 1 is "help":
 					send "&7&l------------&8[ &6&lTNT Run &8]&7&l------------"
 					send "&7/TnTRun list"
 					send "&7/TnTRun join &8(&7arena_name&8)"
 					send "&7/TnTRun autojoin"
 					send "&7/TnTRun leave"
-					if player have permission "tnt.admin":
+					if player have permission "tntrun.admin":
 						send "&7/TnTRun Start"				
 						send "&7/TnTRun ResetStats &8(&7player_name&8)"				
 						send "&7/TnTRun SetLobby"
@@ -128,7 +135,8 @@ command tntrun [<text = help>] [<text>] [<text>]:
 					if {tntRun::player::%player%::state} is not set:	
 						open chest inventory with 6 rows named "{@arena-list}" to player	
 						wait a tick
-						set {_slot} to 10							
+						set {_slot} to 10						
+						set metadata value "TNTRun-Inv" of player to true	
 						loop {tntRun::arenas::*}:
 							set {_item} to green clay named "&8» &7Arena: &e%loop-value%"
 							set line 1 of {_item}'s lore to "&8▪ &7Map: &e%{tntRun::arena::%loop-value%::map}%"	
@@ -161,7 +169,7 @@ command tntrun [<text = help>] [<text>] [<text>]:
 					send ""
 					send "&e&l✦&7&l&m--------------------------------------&e&l✦"			
 		if arg 1 is "setlobby" or "resetstats" or "start" or "reload" or "savearena" or "createarena" or "deletearena" or "SetArenaLobby" or "SetMax" or "SetMin" or "SetMapName" or "SetLoseLevel":		
-			if player has permission "tnt.admin":	
+			if player has permission "tntrun.admin":	
 				if arg 1 is "setlobby":	
 					set {tntRun::lobby} to location of player
 					send "{@prefix}&aLobby set."										
@@ -377,7 +385,7 @@ on right click:
 			set {_slot} to 0
 			loop {tntRun::arena::%{tntRun::player::%player%::arena}%::cache::running-ninjas::*}:
 				set {_target} to loop-value-1
-				make a gui slot {_slot}-1 of player with skull of loop-value named "&e%loop-value%" to run:
+				make a gui slot {_slot} of player with skull of loop-value named "&e%loop-value%" to run:
 					teleport player to {_target}
 				add 1 to {_slot}			
 		
@@ -395,6 +403,13 @@ on place:
 on inventory click:	
 	if {tntRun::player::%player%::state} is set:
 		cancel event
+
+on inventory close:
+	if metadata value "TNTRun-Inv" of player is set:
+		loop all items in player's inventory:
+			if name of loop-item = "&7Hi, &e&n%player's display name%&r &7OwO":
+				clear loop-item
+				
 		
 function tnt_setspec(p: player, title: boolean):
 	tnt_clear_player({_p})	
@@ -410,7 +425,10 @@ function tnt_setspec(p: player, title: boolean):
 	if {_title} is true:
 		send title "{@death-title}" with subtitle "{@death-subtitle}" to {_p} with 10 fadein and 10 fadeout for 40
 		send "{@prefix}{@death}" to {tntRun::arena::%{_arena}%::cache::running-ninjas::*} and {tntRun::arena::%{_arena}%::cache::bad-ninjas::*}
-	teleport {_p} to a random element out of {tntRun::arena::%{_arena}%::cache::running-ninjas::*}
+	set {_teleport} to a random element out of {tntRun::arena::%{_arena}%::cache::running-ninjas::*}
+	teleport {_p} to {_teleport}
+	loop all players:
+		hide {_p} from loop-value-1 
 	tnt_check_win({_arena})
 				
 function tnt_spawn_block_Particle(loc: location):
@@ -525,7 +543,7 @@ function tnt_start_countdown(arena: text):
 on sign change:
 	line 1 is "[TNT]" or "[TNTRUN]" or "[TNT-RUN]"
 	line 2 is "join"
-	player have permission "tnt.admin"
+	player have permission "tntrun.admin"
 	if {tntRun::arena::%line 3%::state} is set:
 		set {tntRun::arena::%line 3%::sign} to location of event-block
 		tnt_update_sign(line 3)
@@ -588,14 +606,15 @@ function tnt_createBoard(p: player, t: text, size: integer = 15):
 
 function tnt_resetarena(arena: text):
 	loop {tntRun::arena::%{_arena}%::cache::running-ninjas::*} and {tntRun::arena::%{_arena}%::cache::bad-ninjas::*}:
-		loop "arena" and "state":
-			delete {tntRun::player::%loop-value-1%::%loop-value-2%}	
+		delete {tntRun::player::%loop-value-1%::*}	
 		tnt_clear_player(loop-value-1)
 		teleport loop-value-1 to {tntRun::lobby}
 		delete scoreboard of loop-value-1
+		loop all players:
+			reveal loop-value-1 for loop-value-2		
 	loop {tntRun::arena::%{_arena}%::BROKEN-BLOCKS::*}:
 		set block at location of {tntRun::arena::%{_arena}%::BROKEN-BLOCKS::%loop-index%} to {tntRun::arena::%{_arena}%::BROKEN-BLOCKS-TYPE::%loop-index%}
-		wait a tick	
+		wait a tick			
 	delete {tntRun::arena::%{_arena}%::cache::*}
 	delete {tntRun::arena::%{_arena}%::BROKEN-BLOCKS::*}			
 	delete {tntRun::arena::%{_arena}%::BROKEN-BLOCKS-TYPE::*}		
