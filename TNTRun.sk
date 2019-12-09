@@ -148,6 +148,7 @@ command tntrun [<text = help>] [<text>] [<text>]:
 								add 2 to {_slot}
 						while name of player's current inventory is "{@arena-list}":
 							loop  0, 1, 2, 3, 4 ,5, 6, 7, 8, 17, 26, 35, 44, 43, 42, 41, 40, 39, 38, 37, 36, 27, 18 and 9:
+								metadata value "TNTRun-Inv" of player is set
 								make a gui slot loop-value-1 of player with black glass named "&7Hi, &e&n%player's display name%&r &7OwO" to do nothing
 								wait a tick				
 								make a gui slot loop-value-1 of player with air to do nothing														
@@ -409,6 +410,7 @@ on inventory close:
 		loop all items in player's inventory:
 			if name of loop-item = "&7Hi, &e&n%player's display name%&r &7OwO":
 				clear loop-item
+		delete metadata value "TNTRun-Inv" of player
 				
 		
 function tnt_setspec(p: player, title: boolean):
@@ -444,8 +446,8 @@ function tnt_somedelay(loc: location, arena: text):
 	wait 3 ticks	
 	set {_location} to tnt_getPlayerStandOnBlockLocation({_loc})
 	block at {_location} != air:
-		set {tntRun::arena::%{_arena}%::BROKEN-BLOCKS::%{_location}%} to {_location}
-		set {tntRun::arena::%{_arena}%::BROKEN-BLOCKS-TYPE::%{_location}%} to type of block at {_location}
+		set {tntRun::arena::%{_arena}%::BROKEN::BLOCKS::%{_location}%} to {_location}
+		set {tntRun::arena::%{_arena}%::BROKEN::BLOCKS-TYPE::%{_location}%} to type of block at {_location}
 		tnt_spawn_block_Particle({_location})
 		set block at {_location} to air
 
@@ -611,13 +613,15 @@ function tnt_resetarena(arena: text):
 		teleport loop-value-1 to {tntRun::lobby}
 		delete scoreboard of loop-value-1
 		loop all players:
-			reveal loop-value-1 for loop-value-2		
-	loop {tntRun::arena::%{_arena}%::BROKEN-BLOCKS::*}:
-		set block at location of {tntRun::arena::%{_arena}%::BROKEN-BLOCKS::%loop-index%} to {tntRun::arena::%{_arena}%::BROKEN-BLOCKS-TYPE::%loop-index%}
-		wait a tick			
+			reveal loop-value-1 to loop-value-2		
+	loop {tntRun::arena::%{_arena}%::BROKEN::BLOCKS::*}:
+		set block at location of {tntRun::arena::%{_arena}%::BROKEN::BLOCKS::%loop-index%} to {tntRun::arena::%{_arena}%::BROKEN::BLOCKS-TYPE::%loop-index%}
+		add 1 to {_id}
+		if {_id} = 30:
+			set {_id} to 0
+			wait a tick		
 	delete {tntRun::arena::%{_arena}%::cache::*}
-	delete {tntRun::arena::%{_arena}%::BROKEN-BLOCKS::*}			
-	delete {tntRun::arena::%{_arena}%::BROKEN-BLOCKS-TYPE::*}		
+	delete {tntRun::arena::%{_arena}%::BROKEN::*}	
 	set {tntRun::arena::%{_arena}%::cache::seconds} to {@lobby-time}
 	tnt_set_arena_status({_arena}, "WAITING")
 	tnt_update_sign({_arena})
