@@ -14,9 +14,11 @@ options:
 	game-full: &7This arena is full.
 	game-running: &7This game already started.
 	not-exist: &7This arena not exists.
+	received-PowerUP: &8➭ &7%loop-player% received powerup &e%{_pw}% &b㋡.
 	summary: "&a︼︼︼︼︼︼︼︼︼︼︼︼︼︼︼︼︼︼︼︼︼︼︼︼︼", "", "&e✦ &6TNTRun &e✦", "", "&a1st &ePlace &8➭ &7%{_place.1}%", "&b2nd &ePlace &8➭ &7%{_place.2}%", "&c3rd &ePlace &8➭ &7%{_place.3}%", "" and "&a︻︻︻︻︻︻︻︻︻︻︻︻︻︻︻︻︻︻︻︻︻︻︻︻︻"
 	second: second
 	seconds: seconds
+	PowerUP: &aPowerUp!
 
 	#SCOREBOARD
 	website: &b㋡ &e&nMC.SERVER.NET&r &b㋡
@@ -25,6 +27,9 @@ options:
 	chat-format: &7%player's display name% &8&l» &7%message%
 	lobby-time: 30
 	action-bar: &aRun away!
+	spawn-PowerUP-every: 30
+	grenade-radius: 2
+	flashbang-radius: 5	
 	
 	leave-slot: 8
 	leave-item: magma cream
@@ -61,6 +66,7 @@ import:
 	org.bukkit.Bukkit
 	org.bukkit.Material	
 	org.bukkit.Location	
+	org.bukkit.util.EulerAngle
 	org.bukkit.material.MaterialData	
 	fr.mrmicky.fastparticle.FastParticle
 	fr.mrmicky.fastparticle.ParticleType	
@@ -123,7 +129,8 @@ command tntrun [<text = help>] [<text>] [<text>]:
 						send "&7/TnTRun SetMin &8(&7arena_name&8) &8(&7number&8)"	
 						send "&7/TnTRun SetMax &8(&7arena_name&8) &8(&7number&8)"		
 						send "&7/TnTRun SetLoseLevel &8(&7arena_name&8)"								
-						send "&7/TnTRun SetMapName &8(&7arena_name&8) &8(&7name&8)"						
+						send "&7/TnTRun SetMapName &8(&7arena_name&8) &8(&7name&8)"	
+						send "&7/TnTRun AddPowerUp &8(&7arena_name&8)"					
 						send "&7/TnTRun SaveArena &8(&7arena_name&8)"							
 						send "&7/TnTRun DeleteArena &8(&7arena_name&8)"					
 						send "&7&l----------------------------------------"
@@ -169,7 +176,7 @@ command tntrun [<text = help>] [<text>] [<text>]:
 						send "&6» &7%loop-value-1% &c%{tntRun::stats::%loop-value-1%::%uuid of player%}%"				
 					send ""
 					send "&e&l✦&7&l&m--------------------------------------&e&l✦"			
-		if arg 1 is "setlobby" or "resetstats" or "start" or "reload" or "savearena" or "createarena" or "deletearena" or "SetArenaLobby" or "SetMax" or "SetMin" or "SetMapName" or "SetLoseLevel":		
+		if arg 1 is "setlobby" or "resetstats" or "start" or "reload" or "savearena" or "createarena" or "deletearena" or "SetArenaLobby" or "SetMax" or "SetMin" or "SetMapName" or "SetLoseLevel" or "AddPowerUp":		
 			if player has permission "tntrun.admin":	
 				if arg 1 is "setlobby":	
 					set {tntRun::lobby} to location of player
@@ -179,18 +186,21 @@ command tntrun [<text = help>] [<text>] [<text>]:
 					tnt_stats("reset", {_p})
 					send "{@prefix}&cReseted Stats for &a%{_p}%"						
 				if arg 1 is "start":
-					size of {tntRun::arena::%{tntRun::player::%player%::arena}%::cache::running-ninjas::*} > 1
+				#	size of {tntRun::arena::%{tntRun::player::%player%::arena}%::cache::running-ninjas::*} > 1
 					tnt_start({tntRun::player::%player%::arena})
 				if arg 1 is "reload":		
 					broadcast "{@prefix}&aReloading..."
 					make console execute command "sk reload %script%"			
-				if arg 1 is "savearena" or "createarena" or "deletearena" or "SetArenaLobby" or "SetMax" or "SetMin" or "SetMapName" or "SetLoseLevel":
+				if arg 1 is "savearena" or "createarena" or "deletearena" or "SetArenaLobby" or "SetMax" or "SetMin" or "SetMapName" or "SetLoseLevel" or "AddPowerUp":
 					if arg 1 is "createarena":			
 						if {tntRun::arena::%arg-2%::state} is not set:
 							set {tntRun::arena::%arg-2%::state} to "setup"
 							send "{@prefix}&aArena &c%arg-2% &ahas been created!"
 						else:
-							send "{@prefix}&aThis arena already exists!"			
+							send "{@prefix}&aThis arena already exists!"	
+					if arg-1 is "AddPowerUp":
+						add location of player to {tntRun::arena::%arg-2%::PowerUps::*}
+						send "{@prefix}&aPowerUp location for Arena &3%arg-2% &aadded!"								
 					if arg 1 is "SetArenaLobby":
 						set {tntRun::arena::%arg-2%::lobby} to location of player
 						send "{@prefix}&aLobby for Arena &3%arg-2% &ahas been set!"
@@ -274,6 +284,9 @@ function tnt_set_place(arena: text, p: player):
 function tnt_check_win(arena: text):
 	size of {tntRun::arena::%{_arena}%::cache::running-ninjas::*} is 1
 	tnt_set_arena_status({_arena}, "RESTARTING")
+	loop all entities in radius 500 of {tntRun::arena::%{_arena}%::lobby}:
+		if loop-entity = armor stand:
+			clear loop-entity		
 	loop 1, 2 and 3:
 		if {tntRun::arena::%{_arena}%::cache::summary::%loop-value-1%} is set:	
 			set {_place.%loop-value%} to "%{tntRun::arena::%{_arena}%::cache::summary::%loop-value-1%}%"
@@ -284,7 +297,7 @@ function tnt_check_win(arena: text):
 		set {_place.1} to "%{_p}%"				
 	send message centered {@summary} to {tntRun::arena::%{_arena}%::cache::running-ninjas::*} and {tntRun::arena::%{_arena}%::cache::bad-ninjas::*}				
 	set {_uuid} to uuid of {_p}
-	add 1 to {tntRun::stats::Wins::%{_uuid}%}
+	add 1 to {tntRun::stats::Wins::%{_uuid}%}	
 	loop 10 times:
 		launch "BALL" firework at location of {_p} timed 1 coloured "RED" and "BLUE" AND "YELLOW" AND "GREEN"
 		wait a second	
@@ -303,6 +316,7 @@ on load:
 		delete {tntRun::arena::%loop-value-1%::cache::running-ninjas::*} and {tntRun::arena::%loop-value-1%::cache::bad-ninjas::*}
 		tnt_resetarena(loop-value)
 	set {tntRun::cache::TitleManager} to Bukkit.getServer().getPluginManager().getPlugin("TitleManager")	
+	set {tntRun::cache::PowerUP} to skull of "ABigDwarf" parsed as offline player
 			
 
 on unload:
@@ -374,6 +388,30 @@ function tnt_join(p: player, arena: text):
 on join:
 	tnt_stats("check", player)
 		
+on projectile hit:
+	metadata value "TYPE" of event-projectile is set:
+		set {_loc} to location of event-projectile 
+		metadata value "TYPE" of event-projectile = "Flashbang":
+			loop all players in radius {@flashbang-radius} of {_loc}:
+				apply potion of blindness to loop-player for 7 seconds
+		metadata value "TYPE" of event-projectile = "Grenade":
+			set {_arena} to metadata value "ARENA" of event-projectile
+			{_arena} is set
+			set {_w} to world of event-projectile
+			loop all blocks in radius {@grenade-radius} of {_loc}:
+				loop-value = sand or gravel
+				tnt_break_block(location of loop-value-1, {_arena})
+				FastParticle.spawnParticle({_w}, ParticleType.EXPLOSION_LARGE, location of loop-value-1 and 1)	
+				tnt_break_block(location of block under loop-value-1, {_arena})		
+
+on shoot:
+	if {tntRun::player::%shooter%::state} is set:
+		set metadata value "ARENA" of event-projectile to {tntRun::player::%shooter%::arena}
+		metadata value "TYPE" of shooter is "Grenade":
+			set metadata value "TYPE" of event-projectile to "Grenade"
+		metadata value "TYPE" of shooter is "Flashbang":
+			set metadata value "TYPE" of event-projectile to "Flashbang"				
+
 on right click:
 	if {tntRun::player::%player%::state} is set:
 		name of event-item is "{@leave-name}" or "{@teleporter-name}":
@@ -388,7 +426,10 @@ on right click:
 				set {_target} to loop-value-1
 				make a gui slot {_slot} of player with skull of loop-value named "&e%loop-value%" to run:
 					teleport player to {_target}
-				add 1 to {_slot}			
+				add 1 to {_slot}
+		name of event-item = "{@PowerUP}":
+			shoot an snowball from player at speed 1
+			remove event-item from player	
 		
 on quit:
 	tnt_leave(player)
@@ -412,7 +453,6 @@ on inventory close:
 				clear loop-item
 		delete metadata value "TNTRun-Inv" of player
 				
-		
 function tnt_setspec(p: player, title: boolean):
 	tnt_clear_player({_p})	
 	set {tntRun::player::%{_p}%::state} to "IN-GAME-SPEC"
@@ -442,14 +482,17 @@ function tnt_spawn_block_Particle(loc: location):
 	set {_material} to new MaterialData(Material.."%{_particle}%")
 	FastParticle.spawnParticle({_w}, ParticleType.BLOCK_CRACK, {_loc}, 5 and {_material})	
 
+function tnt_break_block(loc: location, arena: text):
+	block at {_loc} != air:
+		set {tntRun::arena::%{_arena}%::BROKEN::BLOCKS::%{_loc}%} to {_loc}
+		set {tntRun::arena::%{_arena}%::BROKEN::BLOCKS-TYPE::%{_loc}%} to type of block at {_loc}
+		tnt_spawn_block_Particle({_loc})
+		set block at {_loc} to air
+
 function tnt_somedelay(loc: location, arena: text):
 	wait 3 ticks	
 	set {_location} to tnt_getPlayerStandOnBlockLocation({_loc})
-	block at {_location} != air:
-		set {tntRun::arena::%{_arena}%::BROKEN::BLOCKS::%{_location}%} to {_location}
-		set {tntRun::arena::%{_arena}%::BROKEN::BLOCKS-TYPE::%{_location}%} to type of block at {_location}
-		tnt_spawn_block_Particle({_location})
-		set block at {_location} to air
+	tnt_break_block({_location}, {_arena})
 
 function tnt_getPlayerStandOnBlockLocation(loc: location) :: location:
 	set {_b11} to {_loc}.clone().add(0.3,0 and -0.3)
@@ -498,7 +541,63 @@ function tnt_start_breaking(p: player):
 				add 1 to {tntRun::stats::BrokenBlocks::%{_uuid}%}	
 		else:
 			stop
-	
+
+function tnt_give_speed_pw(p: player):
+	remove speed from {_p}
+	apply potion of speed 2 to {_p} for 10 seconds
+	wait 10 seconds
+	if {tntRun::player::%{_p}%::state} is set:
+		apply potion of speed 1 without any particles to {_p} for 7 days
+
+function tnt_spawn_powerup(arena: text, loc: location, pw: text):	
+	set {_w} to world of {_loc}
+	spawn an armor stand at {_loc}
+	set {_stand} to spawned armor stand
+	set metadata value "TYPE" of {_stand} to {_pw}
+	{_stand}.setMarker(true)
+	{_stand}.setVisible(false)
+	{_stand}.setGravity(false)
+	{_stand}.setCustomNameVisible(true)
+	{_stand}.setCustomName("{@PowerUP}")
+	set {_stand}'s helmet to {tntRun::cache::PowerUP}
+	set {_int} to 0
+	set {_loc2} to {_loc}
+	add 1 to y-coords of {_loc2}
+	while {tntRun::arena::%{_arena}%::cache::status} = "IN-GAME":
+		set {_angle} to new EulerAngle(0, {_int} and 0)	
+		{_stand}.setHeadPose({_angle})	
+		if {_stand} exists:
+			FastParticle.spawnParticle({_w}, ParticleType.FLAME, {_loc2} and 1)
+			loop all players in radius 1 of {_loc}:
+				if {tntRun::player::%loop-player%::state} is set:			
+					if {_pw} = "Grenade" or "Flashbang":
+						set metadata value "TYPE" of loop-value to "%{_pw}%"
+						set slot 4 of loop-player to {tntRun::cache::PowerUP} named "{@PowerUP}"
+					if {_pw} = "Speed":	
+						tnt_give_speed_pw(loop-player)
+					if {_pw} = "Jump":	
+						apply potion of jump boost 2 to loop-value for 10 seconds		
+					send "{@received-PowerUP}" to {tntRun::arena::%{_arena}%::cache::running-ninjas::*}	
+					loop all entities in radius 1 of {_loc}:
+						loop-entity-2 = armor stand:
+							clear loop-entity-2								
+					stop
+		else:
+			stop
+		add 3 to {_int}	
+		wait a tick
+
+function tnt_run_powerups(arena: text):
+	if {tntRun::arena::%{_arena}%::PowerUps::*} is set:
+		while {tntRun::arena::%{_arena}%::cache::status} = "IN-GAME":
+			add 1 to {_int}
+			if {_int} = {@spawn-PowerUP-every}:
+				set {_pw} to random element out of "Grenade", "Flashbang", "Speed" and "Jump"
+				set {_loc} to random element out of {tntRun::arena::%{_arena}%::PowerUps::*}
+				tnt_spawn_powerup({_arena}, {_loc}, {_pw})
+				set {_int} to 0
+			wait a second
+
 function tnt_start(arena: text):
 	set {tntRun::arena::%{_arena}%::cache::status} to "IN-GAME"	
 	loop {tntRun::arena::%{_arena}%::cache::running-ninjas::*}:	
@@ -509,6 +608,7 @@ function tnt_start(arena: text):
 		apply potion of speed 1 without any particles to loop-value for 7 days
 		tnt_start_breaking(loop-value)	
 		tnt_start_check(loop-value)	
+		tnt_run_powerups({_arena})
 
 function tnt_update_sign(arena: text):
 	set line 1 of block at {tntRun::arena::%{_arena}%::sign} to "{@line-1}"
@@ -566,7 +666,8 @@ function tnt_clear_player(p: player):
 	set {_p}'s gamemode to survival
 	set {_p}'s flight mode to false		
 	loop ...{_p}.getActivePotionEffects():
-		{_p}.removePotionEffect(loop-value.getType())	
+		{_p}.removePotionEffect(loop-value.getType())
+	delete metadata value "TYPE" of {_p}
 	set velocity of {_p} to new vector 0, 0, 0		
 	
 function tnt_setSlot(p: player, slot: integer, t: text):
@@ -619,7 +720,10 @@ function tnt_resetarena(arena: text):
 		add 1 to {_id}
 		if {_id} = 30:
 			set {_id} to 0
-			wait a tick		
+			wait a tick	
+	loop all entities in radius 500 of {tntRun::arena::%{_arena}%::lobby}:
+		if loop-entity = armor stand:
+			clear loop-entity	
 	delete {tntRun::arena::%{_arena}%::cache::*}
 	delete {tntRun::arena::%{_arena}%::BROKEN::*}	
 	set {tntRun::arena::%{_arena}%::cache::seconds} to {@lobby-time}
