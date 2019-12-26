@@ -2,7 +2,7 @@ options:
 
 	#MESSAGES
 	prefix: &6TNT Run &8» &7
-	version: v.0.0.1
+	version: v.0.0.2
 	
 	#%size of {tntRun::arena::%{_arena}%::cache::running-ninjas::*}% = current players, %{tntRun::arena::%{_arena}%::max}% = max arena players.
 	join: &a%{_p}'s display name% &ehas joined to the game &e(&b%size of {tntRun::arena::%{_arena}%::cache::running-ninjas::*}%&e/&b%{tntRun::arena::%{_arena}%::max}%&e).
