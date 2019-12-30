@@ -13,10 +13,15 @@
 ***
 # ➭ Instalation:
 ▪ Download Skript and place it in "plugins" folder
+***
 ▪ Download dependencies and place them in "plugins" folder
+***
 ▪ Download the sk. file.
+***
 ▪ Put .sk file in \plugins\Skript\scripts
-▪ Restart The Server
+***
+▪ Restart The Server.
+
 
 ![GitHub release](https://img.shields.io/github/release/andrei923/TNTRun.svg?style=for-the-badge)
 ![GitHub issues](https://img.shields.io/github/issues-raw/andrei923/TNTRun.svg?style=for-the-badge)
