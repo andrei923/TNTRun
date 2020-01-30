@@ -282,26 +282,27 @@ function tnt_set_place(arena: text, p: player):
 	set {tntRun::arena::%{_arena}%::cache::summary::%{_size}%} to {_p}
 
 function tnt_check_win(arena: text):
-	size of {tntRun::arena::%{_arena}%::cache::running-ninjas::*} is 1
-	tnt_set_arena_status({_arena}, "RESTARTING")
-	loop all entities in radius 500 of {tntRun::arena::%{_arena}%::lobby}:
-		if loop-entity = armor stand:
-			clear loop-entity		
-	loop 1, 2 and 3:
-		if {tntRun::arena::%{_arena}%::cache::summary::%loop-value-1%} is set:	
-			set {_place.%loop-value%} to "%{tntRun::arena::%{_arena}%::cache::summary::%loop-value-1%}%"
-		else:	
-			set {_place.%loop-value%} to "&7Loading..."	
-	loop {tntRun::arena::%{_arena}%::cache::running-ninjas::*}:
-		set {_p} to loop-value-1	
-		set {_place.1} to "%{_p}%"				
-	send message centered {@summary} to {tntRun::arena::%{_arena}%::cache::running-ninjas::*} and {tntRun::arena::%{_arena}%::cache::bad-ninjas::*}				
-	set {_uuid} to uuid of {_p}
-	add 1 to {tntRun::stats::Wins::%{_uuid}%}	
-	loop 10 times:
-		launch "BALL" firework at location of {_p} timed 1 coloured "RED" and "BLUE" AND "YELLOW" AND "GREEN"
-		wait a second	
-	tnt_resetarena({_arena})	
+	size of {tntRun::arena::%{_arena}%::cache::running-ninjas::*} is 0 or 1
+	if {tntRun::arena::%{_arena}%::cache::status} is not "RESTARTING":
+		tnt_set_arena_status({_arena}, "RESTARTING")
+		loop all entities in radius 500 of {tntRun::arena::%{_arena}%::lobby}:
+			if loop-entity = armor stand:
+				clear loop-entity		
+		loop 1, 2 and 3:
+			if {tntRun::arena::%{_arena}%::cache::summary::%loop-value-1%} is set:	
+				set {_place.%loop-value%} to "%{tntRun::arena::%{_arena}%::cache::summary::%loop-value-1%}%"
+			else:	
+				set {_place.%loop-value%} to "&7Loading..."	
+		loop {tntRun::arena::%{_arena}%::cache::running-ninjas::*}:
+			set {_p} to loop-value-1	
+			set {_place.1} to "%{_p}%"				
+		send message centered {@summary} to {tntRun::arena::%{_arena}%::cache::running-ninjas::*} and {tntRun::arena::%{_arena}%::cache::bad-ninjas::*}				
+		set {_uuid} to uuid of {_p}
+		add 1 to {tntRun::stats::Wins::%{_uuid}%}	
+		loop 10 times:
+			launch "BALL" firework at location of {_p} timed 1 coloured "RED" and "BLUE" AND "YELLOW" AND "GREEN"
+			wait a second	
+		tnt_resetarena({_arena})	
 						
 			
 on load:
@@ -354,6 +355,7 @@ function tnt_leave(p: player):
 		loop "arena" and "state":
 			delete {tntRun::player::%{_p}%::%loop-value%}				
 		teleport {_p} to {tntRun::lobby}
+		tnt_inventory_manager({_p}, "restore")
 	else:
 		send "{@prefix}{@not-in-game}" to {_p}
 		
@@ -362,12 +364,13 @@ function tnt_join(p: player, arena: text):
 		if {tntRun::arena::%{_arena}%::state} is "ready":
 			if {tntRun::arena::%{_arena}%::cache::status} is "WAITING" or "STARTING":
 				if size of {tntRun::arena::%{_arena}%::cache::running-ninjas::*} < {tntRun::arena::%{_arena}%::max}:
-					tnt_clear_player({_p})
+					tnt_inventory_manager({_p}, "save")
 					set {tntRun::player::%{_p}%::state} to "IN-GAME"
 					set {tntRun::player::%{_p}%::arena} to {_arena}
+					teleport {_p} to {tntRun::arena::%{_arena}%::lobby}					
+					tnt_clear_player({_p})
 					set slot {@leave-slot} of {_p} to {@leave-item} named "{@leave-name}"
 					add {_p} to {tntRun::arena::%{_arena}%::cache::running-ninjas::*}	
-					teleport {_p} to {tntRun::arena::%{_arena}%::lobby}
 					tnt_createBoard({_p}, "TNT-WAITING", 10)					
 					tnt_update_sign({_arena})	
 					if size of {tntRun::arena::%{_arena}%::cache::running-ninjas::*} = 2:
@@ -657,6 +660,30 @@ on right click on sign:
 		if {tntRun::arena::%loop-value-1%::sign} is location of event-block:	
 			tnt_join(player, loop-value-1)	
 
+function tnt_inventory_manager(p: player, type: text):
+	set {_int} to 0
+	if {_type} = "save":
+		{tntRun::player::%{_p}%::inventory::*} is set:
+			stop
+		loop 36 times:
+			if slot {_int} of {_p}'s inventory != air:
+				set {tntRun::player::%{_p}%::inventory::%{_int}%} to slot {_int} of {_p}'s inventory
+			add 1 to {_int}
+		set {tntRun::player::%{_p}%::inventory::Helmet} to {_p}'s helmet
+		set {tntRun::player::%{_p}%::inventory::Chestplate} to {_p}'s chestplate
+		set {tntRun::player::%{_p}%::inventory::Leggings} to {_p}'s legging
+		set {tntRun::player::%{_p}%::inventory::Boots} to {_p}'s boots	
+	if {_type} = "restore":
+		loop 36 times:
+			{tntRun::player::%{_p}%::inventory::%{_int}%} is set:
+				set slot {_int} of {_p}'s inventory to {tntRun::player::%{_p}%::inventory::%{_int}%}
+			add 1 to {_int}
+		set {_p}'s helmet to {tntRun::player::%{_p}%::inventory::Helmet}
+		set {_p}'s chestplate to {tntRun::player::%{_p}%::inventory::Chestplate}
+		set {_p}'s legging to {tntRun::player::%{_p}%::inventory::Leggings}
+		set {_p}'s boots to {tntRun::player::%{_p}%::inventory::Boots}
+		delete {tntRun::player::%{_p}%::inventory::*}
+
 function tnt_clear_player(p: player):						
 	heal {_p}
 	extinguish {_p}
@@ -713,6 +740,7 @@ function tnt_resetarena(arena: text):
 		tnt_clear_player(loop-value-1)
 		teleport loop-value-1 to {tntRun::lobby}
 		delete scoreboard of loop-value-1
+		tnt_inventory_manager(loop-value-1, "restore")
 		loop all players:
 			reveal loop-value-1 to loop-value-2		
 	loop {tntRun::arena::%{_arena}%::BROKEN::BLOCKS::*}:
