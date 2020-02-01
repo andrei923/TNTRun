@@ -295,9 +295,8 @@ function tntRun_check_win(arena: text):
 		loop {-tntRun::arena::cache::%{_arena}%::running-ninjas::*}:
 			set {_p} to loop-value-1	
 			set {_place.1} to "%{_p}%"				
-		send message centered {@summary} to {-tntRun::arena::cache::%{_arena}%::running-ninjas::*} and {-tntRun::arena::cache::%{_arena}%::bad-ninjas::*}				
-		set {_uuid} to uuid of {_p}
-		add 1 to {tntRun::stats::Wins::%{_uuid}%}	
+		send message centered {@summary} to {-tntRun::arena::cache::%{_arena}%::running-ninjas::*} and {-tntRun::arena::cache::%{_arena}%::bad-ninjas::*}	
+		tntRun_stats({_p}, "add", "Wins", 1)
 		loop 10 times:
 			launch "BALL" firework at location of {_p} timed 1 coloured "RED" and "BLUE" AND "YELLOW" AND "GREEN"
 			wait a second	
@@ -486,17 +485,19 @@ function tntRun_spawn_block_Particle(loc: location):
 	set {_material} to new MaterialData(Material.."%{_particle}%")
 	FastParticle.spawnParticle({_w}, ParticleType.BLOCK_CRACK, {_loc}, 5 and {_material})	
 
-function tntRun_break_block(loc: location, arena: text):
+function tntRun_break_block(loc: location, arena: text, p: player):
 	block at {_loc} != air:
 		set {-tntRun::arena::cache::%{_arena}%::Broken::Blocks::%{_loc}%} to {_loc}
 		set {-tntRun::arena::cache::%{_arena}%::Broken::Blocks-Type::%{_loc}%} to type of block at {_loc}
 		tntRun_spawn_block_Particle({_loc})
 		set block at {_loc} to air
+		add 1 to {-tntRun::arena::cache::%{_arena}%::BlocksDestroyed::%{_p}%}
+		tntRun_stats({_p}, "add", "BlocksDestroyed", 1)
 
-function tntRun_somedelay(loc: location, arena: text):
+function tntRun_somedelay(loc: location, arena: text, p: player):
 	wait 3 ticks	
 	set {_location} to tntRun_getPlayerStandOnBlockLocation({_loc})
-	tntRun_break_block({_location}, {_arena})
+	tntRun_break_block({_location}, {_arena}, {_p})
 
 function tntRun_getPlayerStandOnBlockLocation(loc: location) :: location:
 	set {_b11} to {_loc}.clone().add(0.3,0 and -0.3)
@@ -528,7 +529,6 @@ function tntRun_start_check(p: player):
 		wait a tick
 
 function tntRun_start_breaking(p: player):
-	set {_uuid} to uuid of {_p}
 	set {_arena} to {-tntRun::player::%{_p}%::arena}
 	while {-tntRun::player::%{_p}%::state} is "IN-GAME":
 		if {-tntRun::arena::cache::%{-tntRun::player::%{_p}%::arena}%::status} is "IN-GAME":
@@ -539,9 +539,7 @@ function tntRun_start_breaking(p: player):
 				{_loc} is set
 				set {_location} to {_loc}
 				remove loop-number from y-coords of {_location}
-				tntRun_somedelay({_location}, {_arena})
-				add 1 to {-tntRun::arena::cache::%{_arena}%::BlocksDestroyed::%{_p}%}
-				tntRun_stats({_p}, "add", "BlocksDestroyed", 1)	
+				tntRun_somedelay({_location}, {_arena}, {_p})
 		else:
 			stop
 
@@ -622,8 +620,6 @@ function tntRun_update_sign(arena: text):
 
 function tntRun_set_arena_status(arena: text, status: text):	
 	set {-tntRun::arena::cache::%{_arena}%::status} to {_status}
-	if {_status} is "WAITING":
-		set {-tntRun::arena::cache::%{_arena}%::seconds} to {@lobby-time}
 	tntRun_update_sign({_arena})
 
 function tntRun_start_countdown(arena: text):
@@ -756,6 +752,8 @@ function tntRun_resetarena(arena: text):
 		if loop-entity = armor stand:
 			clear loop-entity	
 	delete {-tntRun::arena::cache::%{_arena}%::*}
+	set {-tntRun::arena::cache::%{_arena}%::seconds} to {@lobby-time}
 	tntRun_set_arena_status({_arena}, "WAITING")
+	tntRun_update_sign({_arena})
 							
 				
