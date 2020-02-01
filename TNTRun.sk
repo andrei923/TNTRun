@@ -622,6 +622,8 @@ function tntRun_update_sign(arena: text):
 
 function tntRun_set_arena_status(arena: text, status: text):	
 	set {-tntRun::arena::cache::%{_arena}%::status} to {_status}
+	if {_status} is "WAITING":
+		set {-tntRun::arena::cache::%{_arena}%::seconds} to {@lobby-time}
 	tntRun_update_sign({_arena})
 
 function tntRun_start_countdown(arena: text):
@@ -754,8 +756,6 @@ function tntRun_resetarena(arena: text):
 		if loop-entity = armor stand:
 			clear loop-entity	
 	delete {-tntRun::arena::cache::%{_arena}%::*}
-	set {-tntRun::arena::cache::%{_arena}%::seconds} to {@lobby-time}
 	tntRun_set_arena_status({_arena}, "WAITING")
-	tntRun_update_sign({_arena})
 							
 				
