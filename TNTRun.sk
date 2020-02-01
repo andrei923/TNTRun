@@ -738,13 +738,13 @@ function tntRun_createBoard(p: player, t: text, size: integer = 15):
 
 function tntRun_resetarena(arena: text):
 	loop {-tntRun::arena::cache::%{_arena}%::running-ninjas::*} and {-tntRun::arena::cache::%{_arena}%::bad-ninjas::*}:
-		delete {-tntRun::player::%loop-value-1%::*}	
 		tntRun_clear_player(loop-value-1)
 		teleport loop-value-1 to {tntRun::lobby}
 		delete scoreboard of loop-value-1
 		tntRun_inventory_manager(loop-value-1, "restore")
 		loop all players:
 			reveal loop-value-1 to loop-value-2		
+		delete {-tntRun::player::%loop-value-1%::*}				
 	loop {-tntRun::arena::cache::%{_arena}%::Broken::Blocks::*}:
 		set block at location of {-tntRun::arena::cache::%{_arena}%::Broken::Blocks::%loop-index%} to {-tntRun::arena::cache::%{_arena}%::Broken::Blocks-Type::%loop-index%}
 		add 1 to {_id}
