@@ -2,7 +2,7 @@ options:
 
 	#MESSAGES
 	prefix: &6TNT Run &8» &7
-	version: v.0.0.5
+	version: v.0.0.7
 	
 	join: &a%{_p}'s display name% &ehas joined to the game &e(&b%size of {-tntRun::arena::cache::%{_arena}%::running-ninjas::*}%&e/&b%{tntRun::arena::%{_arena}%::max}%&e).
 	leave: &7%{_p}'s display name% &ehas left the game.
