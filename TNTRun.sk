@@ -163,7 +163,7 @@ command tntrun [<text = help>] [<text>] [<text>]:
 				if arg 1 is "autojoin":		
 					if {-tntRun::player::%player%::state} is not set:
 						loop {tntRun::arenas::*}:
-							if {-tntRun::arena::%loop-value%::status} is "WAITING" or "STARTING":
+							if {-tntRun::arena::cache::%loop-value-1%::status} is "WAITING" or "STARTING":
 								tntRun_join(player, loop-value)
 								stop
 				if arg-1 is "stats":
