@@ -9,8 +9,6 @@
 ***
 > ▪ LeafSK ➥ https://github.com/andrei923/LeafSK/releases
 ***
-> ▪ Skript-mirror ➥ https://5-95031857-gh.circle-artifacts.com/0/skript-mirror-2.0.0-SNAPSHOT.jar
-***
 # ➭ Instalation:
 ▪ Download Skript and place it in "plugins" folder.
 

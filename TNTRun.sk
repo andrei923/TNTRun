@@ -2,7 +2,7 @@ options:
 
 	#MESSAGES
 	prefix: &6TNT Run &8» &7
-	version: v.0.0.7
+	version: v.0.0.8
 	
 	join: &a%{_p}'s display name% &ehas joined to the game &e(&b%size of {-tntRun::arena::cache::%{_arena}%::running-ninjas::*}%&e/&b%{tntRun::arena::%{_arena}%::max}%&e).
 	leave: &7%{_p}'s display name% &ehas left the game.
@@ -57,7 +57,7 @@ options:
 	line-4:	&e	
 
 	#Commands
-	#Used %{_p}% for player
+	#Use %{_p}% for player
 	win-cmd: disabled	
 	death-cmd: disabled	 
 
@@ -67,13 +67,17 @@ options:
 #CODE
 #
 import:			
+	org.bukkit.Color
 	org.bukkit.Bukkit
 	org.bukkit.Material	
 	org.bukkit.Location	
 	org.bukkit.util.EulerAngle
-	org.bukkit.material.MaterialData	
+	org.bukkit.FireworkEffect
+	org.bukkit.entity.Firework
+	org.bukkit.material.MaterialData				
 	fr.mrmicky.fastparticle.FastParticle
 	fr.mrmicky.fastparticle.ParticleType	
+	org.bukkit.inventory.meta.FireworkMeta	
 
 local effect [leaf] send title %string% with subtitle %string% to %players% with %number% fadein and %number% fadeout for %number%:		
 	trigger:
@@ -111,6 +115,31 @@ local effect [leaf] hide %player% [(from|for) %player%]:
 local effect [leaf] reveal %player% [(to|for|from) %player%]:
 	trigger:
 		expr-1.showPlayer(expr-2)	
+		
+function leafSpawnFirework(loc: Location, color: string = "Random", power: number = 0):
+	if {_color} is "Random" or "MultiColor":
+		loop "BLACK", "BLUE", "GRAY", "GREEN", "ORANGE", "PURPLE", "RED", "WHITE" and "YELLOW":
+			if Color.."%loop-value-1%" is set:
+				add loop-value-1 to {_colors::*}		
+		if {_color} is "MultiColor":	
+			loop 3 times:		
+				set {_r} to random element out of {_colors::*}	
+				remove {_r} from {_colors::*}
+				add {_r} to {_finalColors::*} 
+		else:
+			set {_finalColors::*} to random element out of {_colors::*}	
+		set {_color} to random element out of {_finalColors::*}
+	spawn an Firework at {_loc}
+	set {_firework} to spawned Firework
+	set {_fireworkMeta} to {_firework}.getFireworkMeta()
+	set {_effect} to FireworkEffect.builder().flicker(true).withTrail().withColor(Color..{_color}).withFade(Color..{_color})
+	loop {_finalColors::*}:
+		{_effect}.withColor(Color..loop-value-1)
+		{_effect}.withFade(Color..loop-value-1)
+	{_effect}.build()	
+	{_fireworkMeta}.setPower({_power})
+	{_fireworkMeta}.addEffect({_effect}.build())
+	{_firework}.setFireworkMeta({_fireworkMeta})
 
 command tntrun [<text = help>] [<text>] [<text>]:
 	aliases: tnt
@@ -305,7 +334,7 @@ function tntRun_check_win(arena: text):
 		set {_uuid} to uuid of {_p}
 		add 1 to {tntRun::stats::Wins::%{_uuid}%}	
 		loop 10 times:
-			launch "BALL" firework at location of {_p} timed 1 coloured "RED" and "BLUE" AND "YELLOW" AND "GREEN"
+			leafSpawnFirework(location of {_p}, "MultiColor")
 			wait a second	
 		tntRun_resetarena({_arena})	
 						
